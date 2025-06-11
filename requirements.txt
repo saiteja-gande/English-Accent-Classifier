@@ -1,0 +1,7 @@
+streamlit
+yt-dlp
+ffmpeg-python
+torch
+torchaudio
+speechbrain
+sentencepiece
