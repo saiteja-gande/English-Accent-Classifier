@@ -4,42 +4,11 @@ import subprocess
 import torch
 import torchaudio
 import streamlit as st
-import traceback
-import uuid
 from yt_dlp import YoutubeDL
 from speechbrain.pretrained import EncoderClassifier
-from collections import defaultdict
 
-# --- Streamlit UI ---
-st.title("🎙️ English Accent Classifier")
-st.write("Paste a YouTube video URL with clear speech and get an accent prediction.")
-
-# --- Load model once and cache it ---
-@st.cache_resource
-def load_classifier():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    classifier = EncoderClassifier.from_hparams(
-        source="Jzuluaga/accent-id-commonaccent_ecapa",
-        savedir="pretrained_models/accent-id-commonaccent_ecapa",
-        run_opts={"device": str(device)}
-    )
-    return classifier, device
-
-# --- Clean temp files ---
-def clean_temp_files():
-    for f in glob.glob("temp_video.*"):
-        try:
-            os.remove(f)
-        except Exception:
-            pass
-    for f in ["video.mp4", "audio.wav"]:
-        if os.path.exists(f):
-            os.remove(f)
-
-# --- Download video (audio only) using cookies-from-browser ---
-def download_video(url):
-    unique_id = str(uuid.uuid4())
-    temp_output = f"temp_video_{unique_id}.%(ext)s"
+def download_video(url, output_path="video.mp4"):
+    temp_output = "temp_video.%(ext)s"
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': temp_output,
@@ -52,37 +21,33 @@ def download_video(url):
 
     temp_files = glob.glob(f"temp_video_{unique_id}.*")
     if not temp_files:
-        raise FileNotFoundError("No audio file downloaded.")
+        raise FileNotFoundError("No video file found after download.")
 
-    if os.path.exists("video.mp4"):
-        os.remove("video.mp4")
-    os.rename(temp_files[0], "video.mp4")
+    if os.path.exists(output_path):
+        os.remove(output_path)
 
-# --- Extract mono 16kHz audio ---
-def extract_audio(input_file="video.mp4", output_file="audio.wav"):
-    if not os.path.exists(input_file):
-        raise FileNotFoundError(f"{input_file} not found.")
-    cmd = [
-        "ffmpeg", "-i", input_file,
-        "-ar", "16000", "-ac", "1",
-        output_file,
-        "-y", "-loglevel", "error"
-    ]
+    os.rename(temp_files[0], output_path)
+
+def extract_audio():
+    video_file = "video.mp4"
+    if not os.path.exists(video_file):
+        raise FileNotFoundError("video.mp4 not found.")
+
+    cmd = ["ffmpeg", "-i", video_file, "-ar", "16000", "-ac", "1", "audio.wav", "-y", "-loglevel", "error"]
     subprocess.run(cmd, check=True)
 
-# --- Split audio into chunks ---
-def split_audio(audio_path, chunk_seconds=30):
-    signal, sr = torchaudio.load(audio_path)
-    chunk_samples = chunk_seconds * sr
-    chunks = []
-    for start in range(0, signal.size(1), chunk_samples):
-        end = min(start + chunk_samples, signal.size(1))
-        chunks.append(signal[:, start:end])
-    return chunks, sr
+def classify_english_accent(audio_path="audio.wav"):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# --- Classify a single audio chunk ---
-def classify_english_accent_from_tensor(signal, classifier, device):
+    classifier = EncoderClassifier.from_hparams(
+        source="Jzuluaga/accent-id-commonaccent_ecapa",
+        savedir="pretrained_models/accent-id-commonaccent_ecapa",
+        run_opts={"device": str(device)}
+    )
+
+    signal, _ = torchaudio.load(audio_path)
     signal = signal.to(device)
+
     out_prob, _, index, label = classifier.classify_batch(signal)
     accent = label[0]
     confidence = float(out_prob[0][index[0]]) * 100
@@ -114,14 +79,15 @@ def classify_full_audio(audio_path="audio.wav"):
     summary = f"The speaker probably has a **{best_accent}** accent (average confidence: {best_confidence:.2f}%)."
     return best_accent, round(best_confidence, 2), summary
 
-# --- Full pipeline ---
 def analyze_accent_from_url(url):
-    clean_temp_files()
     download_video(url)
     extract_audio()
-    return classify_full_audio()
+    return classify_english_accent()
 
-# --- User input ---
+# ---- Streamlit UI ----
+st.title("🎙️ English Accent Classifier")
+st.write("Paste a YouTube video URL with clear speech and get an accent prediction.")
+
 video_url = st.text_input("Enter YouTube Video URL")
 
 if st.button("Analyze Accent"):
