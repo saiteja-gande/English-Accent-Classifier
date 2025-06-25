@@ -1,29 +1,32 @@
 # 🎙️ English Accent Classifier
 
-This is a simple and powerful web app that analyzes English from a **videos** and classifies the **regional English accent** (e.g., US, England, Australia, etc.) using **deep learning**.
+This is a simple and powerful web app that analyzes spoken English from **YouTube videos** and classifies the **regional English accent** (e.g., US, England, Australia, etc.) using **deep learning**.
 
 Built using:
 - 🧠 [SpeechBrain](https://speechbrain.readthedocs.io/) with a pretrained ECAPA-TDNN model  
-- 🧰 `yt-dlp` to download audio from YouTube  
-- 🎧 `ffmpeg` + `torchaudio` for audio processing  
+- 🧰 `yt-dlp` (uses browser cookies) to download audio from YouTube  
+- 🎧 `ffmpeg` + `torchaudio` for robust audio processing  
 - 🖥️ `Streamlit` for the web interface  
 
 ---
 
 ## 🚀 Live Demo
 
-⚠️ **This app is not currently hosted online.**  
-To try it out, follow the [Installation (Local)](#-installation-local) steps below and run it on your own machine.
+🌐 Try it here: [APP](https://saiteja-gande-english-accent-classifier.streamlit.app/)
+
+> ⚠️ If YouTube-based downloads doesn't work properly. See [Using Cookies](#-using-cookies-for-youtube-downloads-optional-but-recommended).
 
 ---
 
 ## 📦 Features
 
-- 🎥 Paste any **YouTube video URL**
-- 🎧 Extracts clear mono audio at 16 kHz
-- 🧠 Classifies English accent using a **pretrained SpeechBrain model**
+- 🎥 Accepts **YouTube and other video URLs (such as loom)**
+- 🔐 Supports **age-restricted / authenticated videos** via `--cookies-from-browser`
+- 🔊 Extracts high-quality mono audio at 16 kHz
+- 🧠 Classifies English accents using a **pretrained SpeechBrain model**
 - 💻 Automatically uses **CUDA (GPU)** if available
-- 📊 Displays **accent** and **confidence score**
+- 📊 Displays **predicted accent** and **confidence score**
+- 🔄 Processes full-length audio for **greater accuracy**
 
 ---
 
@@ -42,4 +45,15 @@ To try it out, follow the [Installation (Local)](#-installation-local) steps bel
 4. **Run the App**
    
  - `streamlit run app.py`
+
+## 🙏 Credits
+
+This project was made possible thanks to the following open-source tools and communities:
+
+- [SpeechBrain](https://speechbrain.readthedocs.io/)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- [FFmpeg](https://ffmpeg.org/)
+- [torchaudio](https://pytorch.org/audio/stable/)
+- [Streamlit](https://streamlit.io/)
+
 
